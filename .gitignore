@@ -25,5 +25,6 @@ hs_err_pid*
 /catalog/*
 /.project
 /.classpath
+/.settings
 /Subscribers
 /Customers
