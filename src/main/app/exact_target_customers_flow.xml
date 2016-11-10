@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+    <flow name="customer_accounts_feed_flow">
+        <db:stored-procedure config-ref="MySQL_Indochino_Configuration" doc:name="Log Start">
+            <db:parameterized-query><![CDATA[CALL indochino.InsertIntegrCommunication('indo_exact_target_feed', 'customer_accounts_feed_flow', NOW(), NULL, NULL, NULL);]]></db:parameterized-query>
+        </db:stored-procedure>
+        <db:stored-procedure config-ref="MySQL_Indochino_Configuration" doc:name="Get Customer Accounts">
+            <db:parameterized-query><![CDATA[CALL indochino.getExactTargetCustomers();]]></db:parameterized-query>
+        </db:stored-procedure>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <set-variable variableName="file_name" value="${et_c_filename}#[server.dateTime.format(&quot;yyyyMMdd&quot;)]${et_file_type}" doc:name="File Name"/>
+        <set-variable variableName="file_location" value="${et_c_file_location}#[server.dateTime.format(&quot;yyyyMMdd&quot;)]${et_file_type}" doc:name="File Location"/>
+        <invoke name="ETCCSVWriter" object-ref="csvBean" method="exactTargetCustomerWriter" methodArguments="#[json:resultSet1], #[flowVars.file_location]" doc:name="ETCCSVWriter"/>
+        <invoke name="ETCJavaUpload" object-ref="ftpBean" method="uploadFeed" methodArguments="${et_ftp_url}, ${et_ftp_port}, ${et_ftp_user_name}, ${et_ftp_password}, #[flowVars.file_location], #[flowVars.file_name],${et_file_dst}" doc:name="ETCJavaUpload"/>
+        <set-variable variableName="result" value="#[payload]" doc:name="Result Message"/>
+        <db:stored-procedure config-ref="MySQL_Indochino_Configuration" doc:name="Truncate Customer Account">
+            <db:parameterized-query><![CDATA[CALL indochino.truncateEXACTTARGETCustomerAccounts();]]></db:parameterized-query>
+        </db:stored-procedure>
+        <db:stored-procedure config-ref="MySQL_Indochino_Configuration" doc:name="Log End">
+            <db:parameterized-query><![CDATA[CALL indochino.InsertIntegrCommunication('indo_exact_target_feed', 'customer_accounts_feed_flow', NULL, NOW(), #[flowVars.result], NULL);]]></db:parameterized-query>
+        </db:stored-procedure>
+        <logger message="Exact Tagerget Subscribers Feed Finished" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>

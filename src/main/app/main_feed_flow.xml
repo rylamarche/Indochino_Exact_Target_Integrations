@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+<context:property-placeholder location="${mule.env}.properties"/>
+    <db:mysql-config name="MySQL_Indochino_Configuration" host="${db_host}" port="3306" user="${db_user}" password="${db_password}" database="${db_database}" doc:name="MySQL Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration" host="${tractiondemand_host}" port="${tractiondemand_http_port}" basePath="${tractiondemand_base_path}" doc:name="HTTP Request Configuration"/>
+    <vm:connector name="VM" validateConnections="true" doc:name="VM"/>
+    <spring:beans>
+        <spring:bean id="csvBean" name="csvBean" class="com.indochino.csv.CSVWriter"/>
+        <spring:bean id="ftpBean" name="ftpBean" class="com.indochino.FTP.FileUpload"/> 
+        <spring:bean id="mailBean" name="mailBean" class="com.indochino.mail.MailClient"/>    
+    </spring:beans>
+    <configuration defaultExceptionStrategy-ref="exception_handling_flow" doc:name="Configuration">
+        <http:config useTransportForUris="false"/>
+    </configuration>
+    <flow name="indo_tractiondemand_esp" initialState="started">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="24" timeUnit="HOURS"/>
+            <flow-ref name="exact_target_init_flow" doc:name="exact_target_init_flow"/>
+        </poll>
+        <logger message="#['\n\nSubscribers Started\n\n']" level="INFO" doc:name="Logger"/>
+    </flow>
+    <sub-flow name="exact_target_init_flow">
+        <flow-ref name="subscriber_accounts_feed_flow" doc:name="subscriber_accounts_feed_flow"/>
+        <flow-ref name="customer_accounts_feed_flow" doc:name="customer_accounts_feed_flow"/>
+    </sub-flow>
+</mule>

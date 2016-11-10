@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:context="http://www.springframework.org/schema/context" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
+    <flow name="get_subscriber_accounts_from_db">
+        <db:stored-procedure config-ref="MySQL_Staging_Configuration" doc:name="Indo DB">
+            <db:parameterized-query><![CDATA[CALL indochino.getExactTargetSubscribers();]]></db:parameterized-query>
+        </db:stored-procedure>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <invoke name="ETCSVWriter" object-ref="csvBean" method="exactTargetWriter" methodArguments="#[json:resultSet1], ${et_file_location}" doc:name="CSV Builder"/>
+    </flow>
+    <flow name="subscriber_feed_upload">
+        <file:inbound-endpoint path="Subscribers/" responseTimeout="10000" doc:name="File" moveToDirectory="Test/"/>
+        <file:file-to-byte-array-transformer doc:name="File to Byte Array"/>
+        <set-variable variableName="attachment" value="#[payload]" doc:name="Variable"/>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+<!--<flow name="get_access_token">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="vm-path"  doc:name="VM_Get_Access_Token"/>
+        <http:request config-ref="HTTP_Request_Configuration" path="GetAccessToken" method="GET" doc:name="Get Acccess Token"/>
+        <set-session-variable variableName="access_token" value="#[payload.message]" doc:name="Access Token"/>
+        <vm:outbound-endpoint exchange-pattern="request-response" path="vm-path2"  doc:name="VM_Encrypt_JSON"/>
+    </flow> 
+ 	<flow name="encrypt_JSON">
+ 	    <vm:inbound-endpoint exchange-pattern="request-response" path="vm-path2"  doc:name="VM_Encrypt_JSON"/>
+        <logger level="INFO" doc:name="Logger"/>
+        <vm:outbound-endpoint exchange-pattern="request-response" path="vm-path3" doc:name="VM_Send_Subscribers"/>  
+        
+    </flow>
+    <flow name="send_subscribers">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="vm-path3" doc:name="VM_Send_Subscribers"/>
+        <set-variable variableName="appSecret" value="${tractiondemand_secretkey}" doc:name="App Secret Key"/>
+        <set-session-variable variableName="json_encrypted" value="#[json:string/$]" encoding="UTF-8" doc:name="Encrypted JSON"/>
+    </flow> -->
+</mule>

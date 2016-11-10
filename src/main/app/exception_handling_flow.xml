@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    <choice-exception-strategy name="exception_handling_flow">
+        <catch-exception-strategy doc:name="Catch All Error">
+            <set-session-variable variableName="severity" value="Major" doc:name="Severity"/>
+            <set-session-variable variableName="source" value="#[exception.event.flowConstruct.name]" doc:name="Source"/>
+            <set-session-variable variableName="exception_message" value="#[exception.getMessage()]" doc:name="Message"/>
+            <set-session-variable variableName="summary" value="#[exception.getVerboseMessage()]" doc:name="Summary"/>
+            <db:stored-procedure config-ref="MySQL_Indochino_Configuration" doc:name="Log Error End">
+                <db:parameterized-query><![CDATA[CALL indochino.InsertIntegrCommunication('indo_exact_target_feed',  #[sessionVars.source], NULL, NOW(), NULL, #[sessionVars.exception_message]);]]></db:parameterized-query>
+            </db:stored-procedure>
+            <invoke name="MailNotification" object-ref="mailBean" method="sendNotification" methodArguments="${ic_email_recipient}, ${ic_user_email}, ${ic_email_recipient}, ${ic_email_password}, ${ic_email_port}, ${ic_email_host}, ${ic_email_protocol}, #[sessionVars.severity], #[sessionVars.exception_message], #[sessionVars.source], #[sessionVars.summary]" doc:name="Send Notification"/>
+        </catch-exception-strategy>
+    </choice-exception-strategy>
+</mule>
