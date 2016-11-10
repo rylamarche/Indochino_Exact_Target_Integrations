@@ -1,0 +1,29 @@
+va defaults (https://github.com/github/gitignore/blob/master/Java.gitignore) #
+# --- #
+*.class
+org.mulesoft.exportwizardsettings.prefs
+.settings/org.mulesoft.exportwizardsettings.prefs
+mule-deploy.properties
+devenv-local.properties
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+/bin
+/target
+/target/classes
+/emailfile
+/input
+/output
+/catalog/*
+/.project
+/.classpath
+/Subscribers
+/Customers
